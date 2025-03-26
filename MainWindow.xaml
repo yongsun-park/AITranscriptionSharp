@@ -47,5 +47,6 @@
                 Click="MicrophoneButton_Click">
             <Image Source="pack://application:,,,/Images/mic.png" Width="48" Height="48"/>
         </Button>
+
     </Grid>
 </Window>

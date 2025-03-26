@@ -1,0 +1,71 @@
+name: .NET Build and Create Release
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install GitVersion tool
+      run: dotnet tool install --global GitVersion.Tool
+
+    - name: Calculate version
+      id: gitversion
+      run: |
+        # GitVersion를 실행해 JSON 형식으로 출력한 후 gitversion.json 파일로 저장
+        gitversion /output json > gitversion.json
+        # jq를 사용해 SemVer 값을 추출 (jq는 Windows runner에 기본 포함되어 있음)
+        $version = (Get-Content gitversion.json | ConvertFrom-Json).SemVer
+        Write-Host "Calculated version: $version"
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test --no-restore --verbosity normal
+
+    - name: Publish application
+      run: dotnet publish --configuration Release --output ./publish
+
+    - name: Zip published output
+      shell: pwsh
+      run: |
+        Compress-Archive -Path ./publish/* -DestinationPath published.zip
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.gitversion.outputs.version }}
+        release_name: Release v${{ steps.gitversion.outputs.version }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: published.zip
+        asset_name: AITranscriptionSharp.zip
+        asset_content_type: application/zip
