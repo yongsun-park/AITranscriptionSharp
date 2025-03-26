@@ -26,24 +26,36 @@ namespace AITranscriptionSharp.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string OpenAIApiKey {
-            get {
-                return ((string)(this["OpenAIApiKey"]));
-            }
-            set {
-                this["OpenAIApiKey"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string SelectedAiModel {
             get {
                 return ((string)(this["SelectedAiModel"]));
             }
             set {
                 this["SelectedAiModel"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool IsFirstRun {
+            get {
+                return ((bool)(this["IsFirstRun"]));
+            }
+            set {
+                this["IsFirstRun"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EncryptedOpenAIApiKey {
+            get {
+                return ((string)(this["EncryptedOpenAIApiKey"]));
+            }
+            set {
+                this["EncryptedOpenAIApiKey"] = value;
             }
         }
     }

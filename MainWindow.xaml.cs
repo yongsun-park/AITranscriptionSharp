@@ -3,13 +3,15 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using NAudio.Wave;
 using MessageBox = System.Windows.MessageBox;
-using AITranscriptionSharp.Properties;  // Settings 네임스페이스 추가
+using AITranscriptionSharp.Properties;
+using AITranscriptionSharp.Helper;  // Settings 네임스페이스 추가
 
 namespace AITranscriptionSharp
 {
@@ -31,10 +33,26 @@ namespace AITranscriptionSharp
         {
             InitializeComponent();
 
-            // 저장된 API Key 불러오기
-            if (!string.IsNullOrEmpty(Settings.Default.OpenAIApiKey))
+            // 애플리케이션이 처음 실행되는 새 버전일 경우 이전 설정을 업그레이드
+            if (Settings.Default.IsFirstRun)
             {
-                ApiKeyTextBox.Text = Settings.Default.OpenAIApiKey;
+                Settings.Default.Upgrade();
+                Settings.Default.IsFirstRun = false;
+                Settings.Default.Save();
+            }
+
+            // 암호화된 API Key 불러오기 (있으면 복호화)
+            if (!string.IsNullOrEmpty(Settings.Default.EncryptedOpenAIApiKey))
+            {
+                try
+                {
+                    string decryptedKey = EncryptionHelper.DecryptString(Settings.Default.EncryptedOpenAIApiKey);
+                    ApiKeyTextBox.Text = decryptedKey;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"API Key 복호화에 실패했습니다: {ex.Message}");
+                }
             }
 
             // 저장된 모델 불러오기
@@ -114,12 +132,21 @@ namespace AITranscriptionSharp
             }
         }
 
-        // API Key 저장 버튼 클릭 이벤트 핸들러
+        // API Key 저장 버튼 클릭 이벤트 핸들러 (암호화해서 저장)
         private void SaveApiKeyButton_Click(object sender, RoutedEventArgs e)
         {
-            Settings.Default.OpenAIApiKey = ApiKeyTextBox.Text;
-            Settings.Default.Save();
-            MessageBox.Show("API Key가 저장되었습니다.");
+            try
+            {
+                string plainKey = ApiKeyTextBox.Text;
+                string encryptedKey = EncryptionHelper.EncryptString(plainKey);
+                Settings.Default.EncryptedOpenAIApiKey = encryptedKey;
+                Settings.Default.Save();
+                MessageBox.Show("API Key가 안전하게 저장되었습니다.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Key 저장 중 오류 발생: {ex.Message}");
+            }
         }
 
         // ComboBox 선택 변경 시 모델 저장
@@ -136,9 +163,9 @@ namespace AITranscriptionSharp
         {
             byte[] audioData = await RecordAudioAsync();
 
-            // 저장된 API Key 사용
-            string apiKey = !string.IsNullOrEmpty(Settings.Default.OpenAIApiKey)
-                ? Settings.Default.OpenAIApiKey
+            // 저장된 API Key 사용 (복호화된 값을 사용했으므로 ApiKeyTextBox.Text가 평문임)
+            string apiKey = !string.IsNullOrEmpty(ApiKeyTextBox.Text)
+                ? ApiKeyTextBox.Text
                 : "YOUR_OPENAI_API_KEY";
 
             string apiUrl = "https://api.openai.com/v1/audio/transcriptions";
