@@ -25,11 +25,15 @@ jobs:
       id: gitversion
       shell: pwsh
       run: |
-        # GitVersion 도구가 위치한 경로를 PATH에 추가합니다.
-        $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
-        # GitVersion 실행하여 JSON 형식의 버전 정보를 파일로 저장
-        gitversion /output json > gitversion.json
-        # 버전 정보를 PowerShell에서 파싱
+        # GitVersion.exe의 전체 경로를 변수에 저장합니다.
+        $gitversionPath = "$env:USERPROFILE\.dotnet\tools\gitversion.exe"
+        if (-Not (Test-Path $gitversionPath)) {
+          Write-Error "GitVersion.exe not found at $gitversionPath"
+          exit 1
+        }
+        # GitVersion 실행하여 JSON 형식의 버전 정보를 파일로 저장합니다.
+        & $gitversionPath /output json > gitversion.json
+        # 버전 정보를 파싱합니다.
         $version = (Get-Content gitversion.json | ConvertFrom-Json).SemVer
         Write-Host "Calculated version: $version"
         echo "version=$version" >> $env:GITHUB_OUTPUT
