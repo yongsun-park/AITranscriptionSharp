@@ -18,19 +18,12 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: Setup GitVersion
-      uses: gittools/actions/gitversion/setup@v0.9.12
+    # GitVersion ½ÇÇà
+    - name: Determine version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v0.9.12
       with:
         versionSpec: '5.x'
-
-    - name: Calculate version
-      id: gitversion
-      shell: pwsh
-      run: |
-        gitversion /output json > gitversion.json
-        $version = (Get-Content gitversion.json | ConvertFrom-Json).SemVer
-        Write-Host "Calculated version: $version"
-        echo "version=$version" >> $env:GITHUB_OUTPUT
 
     - name: Restore dependencies
       run: dotnet restore
@@ -55,8 +48,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: v${{ steps.gitversion.outputs.version }}
-        release_name: Release v${{ steps.gitversion.outputs.version }}
+        tag_name: v${{ steps.gitversion.outputs.SemVer }}
+        release_name: Release v${{ steps.gitversion.outputs.SemVer }}
         draft: false
         prerelease: false
 
